@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>History</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>History</h1>
+
+        <ul id="historyList">
+            {% for item in history %}
+                <li>
+                    <strong>{{ item.timestamp }}</strong> - Platform: {{ item.platform }} - 
+                    {{ item.campaign_type }} - {{ item.intake }} - {{ item.tone }}
+                    <pre>{{ item.result | tojson }}</pre>
+                </li>
+            {% endfor %}
+        </ul>
+
+        <button id="copyHistory">Copy History</button>
+        <button id="clearHistory">Clear History</button>
+        <a href="/">Go Back</a>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

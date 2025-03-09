@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ad Caption Generator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Ad Caption Generator</h1>
+        
+        <!-- Form Section -->
+        <form id="adForm">
+            <label for="platform">Platform</label>
+            <select id="platform" name="platform">
+                {% for platform in platforms %}
+                    <option value="{{ platform }}">{{ platform }}</option>
+                {% endfor %}
+            </select>
+
+            <label for="campaign_type">Campaign Type</label>
+            <select id="campaign_type" name="campaign_type">
+                <option value="General">General</option>
+                <option value="Foundation">Foundation</option>
+                <option value="MBBS">MBBS</option>
+                <option value="Pharmacy">Pharmacy</option>
+            </select>
+
+            <label for="intake">Intake</label>
+            <select id="intake" name="intake">
+                {% for intake in intakes %}
+                    <option value="{{ intake }}">{{ intake }}</option>
+                {% endfor %}
+            </select>
+
+            <label for="tone">Tone</label>
+            <select id="tone" name="tone">
+                <option value="Casual">Casual</option>
+                <option value="Urgency">Urgency</option>
+                <option value="Promotional">Promotional</option>
+            </select>
+
+            <!-- Programs field, initially hidden -->
+            <div id="programsContainer" style="display: none;">
+                <label for="programs">Programs</label>
+                <select id="programs" name="programs" multiple>
+                    <option value="All">All Programs</option>
+                    {% for program in foundation_programs %}
+                        <option value="{{ program }}">{{ program }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <label for="custom_message">Custom Message</label>
+            <textarea id="custom_message" name="custom_message"></textarea>
+
+            <!-- Minimum Words field for Meta (initially hidden) -->
+            <div id="minWordsContainer" style="display: none;">
+                <label for="min_words">Minimum Words (Meta)</label>
+                <input type="number" id="min_words" name="min_words" min="1" value="10">
+            </div>
+
+            <button type="submit">Generate Captions</button>
+        </form>
+
+        <hr>
+
+        <!-- Result Section -->
+        <div id="resultSection">
+            <h2>Generated Captions & Headlines</h2>
+            <div id="captions"></div>
+            <div id="headlines"></div>
+            <div id="descriptions"></div>
+        </div>
+
+        <hr>
+
+        <a href="/history">View History</a>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
