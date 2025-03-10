@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Event Caption Generator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Event Caption Generator</h1>
+        
+        <form id="eventForm">
+            <label>Event Name</label>
+            <input type="text" id="event_name" required>
+
+            <label>Event Venue</label>
+            <input type="text" id="event_venue" required>
+
+            <label>Event Time</label>
+            <input type="text" id="event_time" value="2:00pm - 5:00pm" readonly>
+
+            <label>Tone</label>
+            <select id="tone">
+                <option value="Casual">Casual</option>
+                <option value="Urgency">Urgency</option>
+                <option value="Promotional" selected>Promotional</option>
+            </select>
+
+            <label>Additional Text (Optional)</label>
+            <textarea id="add_on_text" placeholder="Any extra details?"></textarea>
+
+            <button type="submit">Generate Captions</button>
+        </form>
+
+        <div id="resultSection">
+            <h2>Generated Captions</h2>
+            <div id="captions"></div>
+        </div>
+
+        <a href="/">Back to Main</a>
+    </div>
+
+    <script src="{{ url_for('static', filename='event_script.js') }}"></script>
+</body>
+</html>

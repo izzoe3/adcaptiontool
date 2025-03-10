@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Generated History</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="container" id="historyPage">  <!-- ✅ Added ID for script detection -->
+        <h1>Generated History</h1>
+        <ul id="historyList">
+            {% for item in history %}
+                <li class="history-item">
+                    <h3>{{ item.timestamp }}</h3>
+                    <p><strong>Platform:</strong> {{ item.platform }}</p>
+                    <p><strong>Campaign Type:</strong> {{ item.campaign_type }}</p>
+                    <p><strong>Intake:</strong> {{ item.intake }}</p>
+                    <p><strong>Tone:</strong> {{ item.tone }}</p>
+
+                    {% if item.result.captions %}
+                        <h4>Captions:</h4>
+                        <ul>
+                            {% for caption in item.result.captions %}
+                                <li>{{ caption }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+
+                    {% if item.result.headlines %}
+                        <h4>Headlines:</h4>
+                        <ul>
+                            {% for headline in item.result.headlines %}
+                                <li>{{ headline }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+
+                    {% if item.result.descriptions %}
+                        <h4>Descriptions (Google Ads):</h4>
+                        <ul>
+                            {% for desc in item.result.descriptions %}
+                                <li>{{ desc }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                </li>
+            {% endfor %}
+        </ul>
+
+        <button id="copyHistory">Copy History</button>
+        <button id="clearHistory">Clear History</button>
+        <button id="exportCSV">Export to CSV</button>
+
+        <a href="/">Back to Home</a>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
