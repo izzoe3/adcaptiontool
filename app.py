@@ -6,12 +6,16 @@ import sqlite3
 import json
 import re
 from datetime import datetime
+import os  # Add this
+from dotenv import load_dotenv  # Already added in integration
 
 app = Flask(__name__)
 
-# Set up Google AI API Key
-API_KEY = "AIzaSyAxVViNcXOlgFom5Z05AzohgAJRJh8q7SI"
+# Load API key from .env
+load_dotenv()
+API_KEY = os.getenv("GOOGLE_API_KEY") or "AIzaSyAxVViNcXOlgFom5Z05AzohgAJRJh8q7SI"  # Fallback for testing
 genai.configure(api_key=API_KEY)
+
 
 # Predefined intakes and programs
 INTAKES = ["February", "April", "July", "October"]
@@ -378,6 +382,44 @@ def mark_used():
 
     conn.close()
     return jsonify({"success": True})
+
+@app.route('/persona', methods=['GET', 'POST'])
+def persona():
+    if request.method == 'POST':
+        data = request.json
+        industry = data.get('industry')
+        product = data.get('product')
+        demographic = data.get('demographic')
+        tone = data.get('tone')  # Reuse tone from existing options
+
+        if not all([industry, product, demographic, tone]):
+            return jsonify({"error": "Required fields missing."}), 400
+
+        prompt = (
+            f"Create a customer persona for a {industry} company selling {product}. "
+            f"Target: {demographic}. Provide exactly 10 fields in a {tone} tone:\n"
+            "1. Name (fictional)\n2. Age\n3. Gender\n4. Location\n5. Job/Role\n"
+            "6. Interests\n7. Pain Points\n8. Goals\n9. Preferred Marketing Channels\n10. Recommended Messaging Tone"
+        )
+
+        model = genai.GenerativeModel("gemini-1.5-flash")  # Use a real model
+        response = model.generate_content(prompt)
+        persona_text = response.text.strip()
+
+        # Parse persona into a list
+        persona_lines = [line.strip() for line in persona_text.split('\n') if line.strip() and re.match(r"^\d+\.", line)]
+        result = {"persona": persona_lines[:10]}  # Ensure exactly 10 fields
+
+        # Save to history (reuse existing function)
+        conn = sqlite3.connect('history.db')
+        c = conn.cursor()
+        save_to_history("Persona", "Persona", product, tone, result, demographic, "Persona Creation")
+        item_id = c.lastrowid
+        conn.close()
+
+        return jsonify({"result": result, "id": item_id})
+
+    return render_template('persona.html', tones=["Professional", "Casual", "Exciting", "Inspirational", "Urgent", "Friendly"])
 
 if __name__ == '__main__':
     app.run(debug=True)

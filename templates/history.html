@@ -13,6 +13,7 @@
             <nav>
                 <a href="/">Main Generator</a>
                 <a href="/event_caption">Event Captions</a>
+                <a href="/persona">Persona Generator</a> <!-- Add this -->
             </nav>
         </header>
         
@@ -193,6 +194,53 @@
                     {% endif %}
                 </div>
             </section>
+
+            <!-- Add after Event Campaigns section -->
+            <section class="history-section">
+                <h2 class="section-toggle">Persona Generator <span class="toggle-icon">+</span></h2>
+                <div class="section-content" style="display: none;">
+                    {% for date, items in history|groupby('timestamp'|truncate(10, true, '')) %}
+                        {% if items|selectattr('platform', 'equalto', 'Persona')|list %}
+                            <div class="date-group">
+                                <h3 class="date-toggle">{{ date }} <span class="toggle-icon">+</span></h3>
+                                <div class="date-content" style="display: none;">
+                                    <table class="history-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Product</th>
+                                                <th>Tone</th>
+                                                <th>Target Demographic</th>
+                                                <th>Persona Fields</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for item in items if item.platform == 'Persona' %}
+                                                <tr class="history-row">
+                                                    <td>{{ item.intake }}</td>
+                                                    <td>{{ item.tone }}</td>
+                                                    <td>{{ item.target_audience }}</td>
+                                                    <td>
+                                                        {% for field in item.result.persona %}
+                                                            <div>
+                                                                <span {% if item.used.get(field) %}class="used"{% endif %}>{{ field }}</span>
+                                                                <input type="checkbox" class="used-toggle" data-caption="{{ field }}" data-id="{{ item.id }}" {% if item.used.get(field) %}checked{% endif %}>
+                                                            </div>
+                                                        {% endfor %}
+                                                    </td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                    {% if not history|selectattr('platform', 'equalto', 'Persona')|list %}
+                        <p>No personas generated yet.</p>
+                    {% endif %}
+                </div>
+            </section>
+
 
             <div class="button-group">
                 <button id="copyHistory" class="btn btn-secondary">Copy All</button>
