@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>QIU Event Caption Generator</title>
+    <title>Event Caption Generator</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
 </head>
@@ -17,64 +17,84 @@
         </header>
         
         <main class="card">
-            <form id="eventForm" class="form-grid">
-                <div class="form-group">
-                    <label for="event_name">Event Name</label>
-                    <input type="text" id="event_name" required>
-                </div>
+            <form id="eventForm" class="generator-form">
+                <label for="event_name">Event Name:</label>
+                <input type="text" id="event_name" name="event_name" required>
 
-                <div class="form-group">
-                    <label for="event_venue">Venue</label>
-                    <input type="text" id="event_venue" required>
-                </div>
+                <label for="event_venue">Event Venue:</label>
+                <input type="text" id="event_venue" name="event_venue" required>
 
-                <div class="form-group">
-                    <label for="date_from">Date (From)</label>
-                    <input type="date" id="date_from" required>
-                </div>
+                <label for="event_date">Event Date:</label>
+                <input type="text" id="event_date" name="event_date" placeholder="e.g., 15th October 2023" required>
 
-                <div class="form-group">
-                    <label for="date_to">Date (To)</label>
-                    <input type="date" id="date_to" required>
-                </div>
+                <label for="event_time">Event Time:</label>
+                <input type="text" id="event_time" name="event_time" placeholder="e.g., 9:00 AM - 5:00 PM" required>
 
-                <div class="form-group">
-                    <label for="time_from">Time (From)</label>
-                    <input type="time" id="time_from" required>
-                </div>
+                <label for="tone">Tone:</label>
+                <select id="tone" name="tone" required>
+                    <option value="Professional">Professional</option>
+                    <option value="Casual">Casual</option>
+                    <option value="Exciting">Exciting</option>
+                    <option value="Inspirational">Inspirational</option>
+                    <option value="Urgent">Urgent</option>
+                    <option value="Friendly">Friendly</option>
+                </select>
 
-                <div class="form-group">
-                    <label for="time_to">Time (To)</label>
-                    <input type="time" id="time_to" required>
-                </div>
+                <label for="target_audience">Target Audience:</label>
+                <select id="target_audience" name="target_audience" required>
+                    <option value="Students">Students</option>
+                    <option value="Parents">Parents</option>
+                    <option value="Working Adults">Working Adults</option>
+                    <option value="General Public">General Public</option>
+                </select>
 
-                <div class="form-group">
-                    <label for="tone">Tone</label>
-                    <select id="tone">
-                        <option value="Casual">Casual</option>
-                        <option value="Urgency">Urgency</option>
-                        <option value="Promotional" selected>Promotional</option>
-                    </select>
-                </div>
+                <label for="ad_goal">Ad Goal (Optional):</label>
+                <select id="ad_goal" name="ad_goal">
+                    <option value="">None</option>
+                    <option value="Awareness">Awareness</option>
+                    <option value="Engagement">Engagement</option>
+                    <option value="Conversion">Conversion</option>
+                </select>
 
-                <div class="form-group">
-                    <label for="min_words">Min Words</label>
-                    <input type="number" id="min_words" min="5" value="10" required>
-                </div>
+                <label for="min_words">Minimum Words per Caption:</label>
+                <input type="number" id="min_words" name="min_words" min="5" value="10">
 
-                <div class="form-group">
-                    <label for="add_on_text">Add-On Text</label>
-                    <input type="text" id="add_on_text" placeholder="e.g., Free Entry">
-                </div>
+                <label for="add_on_text">Add-On Text (Optional):</label>
+                <textarea id="add_on_text" name="add_on_text" placeholder="e.g., Sustainability Focus"></textarea>
 
-                <button type="submit" class="btn btn-primary">Generate</button>
+                <button type="submit" class="btn btn-primary">Generate Event Captions</button>
             </form>
 
-            <section id="resultSection" class="results">
+            <section id="resultSection" class="results" style="display: none;">
                 <h2>Generated Captions</h2>
-                <div id="captions"></div>
+                <table class="result-table">
+                    <thead>
+                        <tr>
+                            <th>Caption</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="captions"></tbody>
+                </table>
+            
                 <h2>Generated Headlines</h2>
-                <div id="headlines"></div>
+                <table class="result-table">
+                    <thead>
+                        <tr>
+                            <th>Headline</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="headlines"></tbody>
+                </table>
+            
+                <div class="ad-suggestions">
+                    <h2>Ad Suggestions</h2>
+                    <p><strong>Visual Idea:</strong> <span id="visual_idea"></span></p>
+                    <p><strong>CTA:</strong> <span id="cta"></span></p>
+                </div>
+            
+                <button id="regenerateBtn" class="btn btn-secondary">Regenerate</button>
             </section>
         </main>
     </div>

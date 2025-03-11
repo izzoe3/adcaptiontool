@@ -5,6 +5,7 @@ import google.generativeai as genai
 import sqlite3
 import json
 import re
+from datetime import datetime
 
 app = Flask(__name__)
 
@@ -24,32 +25,34 @@ PLATFORMS = ["Meta", "Google"]
 
 # Initialize SQLite database
 def init_db():
-    with sqlite3.connect("history.db") as conn:
-        cursor = conn.cursor()
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS history (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                platform TEXT,
-                campaign_type TEXT,
-                intake TEXT,
-                tone TEXT,
-                result TEXT,
-                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        conn.commit()
+    conn = sqlite3.connect('history.db')
+    c = conn.cursor()
+    c.execute('''CREATE TABLE IF NOT EXISTS history
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                  timestamp TEXT,
+                  platform TEXT,
+                  campaign_type TEXT,
+                  intake TEXT,
+                  tone TEXT,
+                  result TEXT,
+                  used TEXT DEFAULT '{}',
+                  target_audience TEXT,
+                  ad_goal TEXT)''')
+    conn.commit()
+    conn.close()
 
 init_db()
 
 # Save generated ad copy to history
-def save_to_history(platform, campaign_type, intake, tone, result):
-    with sqlite3.connect("history.db") as conn:
-        cursor = conn.cursor()
-        cursor.execute("""
-            INSERT INTO history (platform, campaign_type, intake, tone, result)
-            VALUES (?, ?, ?, ?, ?)
-        """, (platform, campaign_type, intake, tone, json.dumps(result)))
-        conn.commit()
+def save_to_history(platform, campaign_type, intake, tone, result, target_audience=None, ad_goal=None):
+    # Assumes connection is passed from caller
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    result_json = json.dumps(result)
+    used_json = json.dumps({})
+    c = sqlite3.connect('history.db').cursor()  # Temporary fallback if not fixed elsewhere
+    c.execute("INSERT INTO history (timestamp, platform, campaign_type, intake, tone, result, used, target_audience, ad_goal) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+              (timestamp, platform, campaign_type, intake, tone, result_json, used_json, target_audience, ad_goal))
+    c.connection.commit()
 
 @app.route('/')
 def home():
@@ -62,35 +65,43 @@ def generate():
     campaign_type = data.get('campaign_type')
     intake = data.get('intake')
     tone = data.get('tone')
-    min_words = int(data.get('min_words', 10)) if platform == "Meta" else 10
-    add_on_text = data.get('add_on_text', '').strip()
+    min_words = int(data.get('min_words', 10)) if platform == "Meta" else None  # Only for Meta
+    add_on_text = data.get('add_on_text', '').strip() if platform == "Meta" else ''  # Only for Meta
     programs = data.get('programs', [])
+    target_audience = data.get('target_audience')
+    ad_goal = data.get('ad_goal', '')
 
-    # Validate required fields
-    if not all([platform, campaign_type, intake, tone]):
-        return jsonify({"error": "All fields except Add-On Text are required."}), 400
+    if not all([platform, campaign_type, intake, tone, target_audience]):
+        return jsonify({"error": "Required fields missing."}), 400
 
-    # Handle campaign type logic
     if campaign_type == "General":
         campaign_desc = f"an intake promotion for Quest International University in {intake}"
     elif campaign_type == "Foundation" and programs:
-        campaign_desc = f"the {', '.join(programs)} program(s) at Quest International University in {intake}"
+        campaign_desc = f"the {', '.join(programs)} Foundation program(s) at Quest International University in {intake}"
+    elif campaign_type == "Foundation":
+        campaign_desc = f"the Foundation programs at Quest International University in {intake}"
+    elif campaign_type == "MBBS":
+        campaign_desc = f"the MBBS program at Quest International University in {intake}"
+    elif campaign_type == "Pharmacy":
+        campaign_desc = f"the Pharmacy program at Quest International University in {intake}"
     else:
-        campaign_desc = f"the {campaign_type} program at Quest International University in {intake}"
+        campaign_desc = f"a program at Quest International University in {intake}"
 
-    # Add-on text prompt
-    add_on_prompt = f" Incorporate the theme of '{add_on_text}' naturally in the copy." if add_on_text else ""
+    add_on_prompt = f" Incorporate the theme of '{add_on_text}' naturally in the copy." if add_on_text and platform == "Meta" else ""
+    goal_prompt = f" Focus on {ad_goal} as the ad goal (e.g., encourage clicks, sign-ups, or shares)." if ad_goal else ""
 
-    # Construct platform-specific prompt
     if platform == "Meta":
         prompt = f"""
-        Generate exactly 5 engaging Meta ad captions (each at least {min_words} words) and 5 ad headlines (exactly 30 characters) to promote {campaign_desc} in a {tone} tone:
+        Generate exactly 5 engaging Meta ad captions (each at least {min_words} words) and 5 ad headlines (exactly 30 characters) to promote {campaign_desc} in a {tone} tone, targeting {target_audience}:
 
         **Details:**
         - University: Quest International University
         - Intake: {intake}
 
         {add_on_prompt}
+        {goal_prompt}
+
+        Craft captions that hook the audience with a clear benefit or call-to-action relevant to {target_audience}.
 
         **Format strictly as follows:**
         Captions:
@@ -109,13 +120,15 @@ def generate():
         """
     else:  # Google
         prompt = f"""
-        Generate exactly 5 engaging Google ad headlines (exactly 30 characters) and 5 ad descriptions (exactly 90 characters) to promote {campaign_desc} in a {tone} tone:
+        Generate exactly 5 engaging Google ad headlines (exactly 30 characters) and 5 ad descriptions (exactly 90 characters) to promote {campaign_desc} in a {tone} tone, targeting {target_audience}:
 
         **Details:**
         - University: Quest International University
         - Intake: {intake}
 
-        {add_on_prompt}
+        {goal_prompt}
+
+        Craft descriptions with a strong hook or benefit tailored to {target_audience}.
 
         **Format strictly as follows:**
         Headlines:
@@ -133,16 +146,13 @@ def generate():
         5. ...
         """
 
-    # AI Call
-    model = genai.GenerativeModel("gemini-2.0-flash-lite")  # Replace with your model
+    model = genai.GenerativeModel("gemini-2.0-flash-lite")  # Updated from your code
     response = model.generate_content(prompt)
 
-    # Process AI Response
     captions, headlines, descriptions = [], [], []
     if response and hasattr(response, "candidates") and response.candidates:
         text = response.candidates[0].content.parts[0].text.split("\n")
         section = None
-
         for line in text:
             line = line.strip()
             if re.match(r"^Captions?:", line, re.IGNORECASE):
@@ -152,7 +162,7 @@ def generate():
             elif re.match(r"^Descriptions?:", line, re.IGNORECASE):
                 section = "descriptions"
             elif section and re.match(r"^\d+\.\s", line):
-                content = line.split(".", 1)[1].strip()
+                content = re.sub(r"^\d+\.\s*", "", line).strip()
                 if section == "captions":
                     captions.append(content)
                 elif section == "headlines":
@@ -160,17 +170,27 @@ def generate():
                 elif section == "descriptions":
                     descriptions.append(content)
 
-    # Ensure proper data structure
-    result = {
-        "captions": captions[:5] if platform == "Meta" else [],
-        "headlines": headlines[:5],
-        "descriptions": descriptions[:5] if platform == "Google" else []
-    }
+    # Platform-specific result structure
+    if platform == "Meta":
+        result = {
+            "captions": captions[:5],
+            "headlines": headlines[:5]
+        }
+    else:  # Google
+        result = {
+            "headlines": headlines[:5],
+            "descriptions": descriptions[:5]
+        }
 
-    # Save to history
-    save_to_history(platform, campaign_type, intake, tone, result)
+    conn = sqlite3.connect('history.db')
+    c = conn.cursor()
+    save_to_history(platform, campaign_type, intake, tone, result, target_audience, ad_goal)
+    item_id = c.lastrowid
+    conn.close()
 
-    return jsonify(result)
+    print("Response:", {"result": result, "id": item_id})
+    return jsonify({"result": result, "id": item_id})
+
 
 @app.route('/event_caption', methods=['GET', 'POST'])
 def event_caption():
@@ -183,23 +203,29 @@ def event_caption():
         tone = data.get('tone')
         min_words = int(data.get('min_words', 10))
         add_on_text = data.get('add_on_text', '').strip()
+        target_audience = data.get('target_audience')
+        ad_goal = data.get('ad_goal', '')
 
-        if not all([event_name, event_venue, event_date, event_time, tone]):
-            return jsonify({"error": "All fields except Add-On Text are required."}), 400
+        if not all([event_name, event_venue, event_date, event_time, tone, target_audience]):
+            return jsonify({"error": "Required fields missing."}), 400
 
         add_on_prompt = f" Incorporate the theme of '{add_on_text}' naturally in the copy." if add_on_text else ""
+        goal_prompt = f" Focus on {ad_goal} as the ad goal (e.g., encourage attendance, shares, or registrations)." if ad_goal else ""
 
         prompt = f"""
-        Generate exactly 5 engaging Meta ad captions (each at least {min_words} words) and 5 ad headlines (exactly 30 characters) to promote the following event organized by Quest International University in a {tone} tone:
+        Generate exactly 5 engaging Meta ad captions (each at least {min_words} words) and 5 ad headlines (exactly 30 characters) to promote the following event organized by Quest International University in a {tone} tone, targeting {target_audience}:
 
-        **Event Details:**
+        **Details:**
+        - University: Quest International University
         - Event Name: {event_name}
         - Venue: {event_venue}
         - Date: {event_date}
         - Time: {event_time}
-        - University: Quest International University
 
         {add_on_prompt}
+        {goal_prompt}
+
+        Craft captions with a compelling hook or benefit tailored to {target_audience}.
 
         **Format strictly as follows:**
         Captions:
@@ -224,7 +250,6 @@ def event_caption():
         if response and hasattr(response, "candidates") and response.candidates:
             text = response.candidates[0].content.parts[0].text.split("\n")
             section = None
-
             for line in text:
                 line = line.strip()
                 if re.match(r"^Captions?:", line, re.IGNORECASE):
@@ -232,7 +257,7 @@ def event_caption():
                 elif re.match(r"^Headlines?:", line, re.IGNORECASE):
                     section = "headlines"
                 elif section and re.match(r"^\d+\.\s", line):
-                    content = line.split(".", 1)[1].strip()
+                    content = re.sub(r"^\d+\.\s*", "", line).strip()
                     if section == "captions":
                         captions.append(content)
                     elif section == "headlines":
@@ -240,28 +265,47 @@ def event_caption():
 
         result = {
             "captions": captions[:5],
-            "headlines": headlines[:5]
+            "headlines": headlines[:5],
+            "descriptions": []  # Always empty for events (Meta only)
         }
 
-        save_to_history("Meta", "Event", event_name, tone, result)
+        conn = sqlite3.connect('history.db')
+        c = conn.cursor()
+        save_to_history("Meta", "Event", event_name, tone, result, target_audience, ad_goal)
+        item_id = c.lastrowid  # Use lastrowid instead of query
+        conn.close()
 
-        return jsonify(result)
+        print("Response:", {"result": result, "id": item_id})
+        return jsonify({"result": result, "id": item_id})
 
     return render_template('event_caption.html')
 
 @app.route('/history')
 def history():
-    with sqlite3.connect("history.db") as conn:
-        cursor = conn.cursor()
-        cursor.execute("""
-            SELECT platform, campaign_type, intake, tone, result, timestamp FROM history
-            ORDER BY timestamp DESC
-            LIMIT 2
-        """)
-        history_data = [{"platform": row[0], "campaign_type": row[1], "intake": row[2], 
-                         "tone": row[3], "result": json.loads(row[4]), "timestamp": row[5]} 
-                        for row in cursor.fetchall()]
-    return render_template('history.html', history=history_data)
+    conn = sqlite3.connect('history.db')
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+    c.execute("SELECT * FROM history ORDER BY timestamp DESC")
+    history_data = c.fetchall()
+    conn.close()
+
+    history = []
+    for row in history_data:
+        result = json.loads(row['result'])
+        used = json.loads(row['used']) if row['used'] else {}
+        history.append({
+            'id': row['id'],
+            'timestamp': row['timestamp'],
+            'platform': row['platform'],
+            'campaign_type': row['campaign_type'],
+            'intake': row['intake'],
+            'tone': row['tone'],
+            'result': result,
+            'used': used,
+            'target_audience': row['target_audience'],
+            'ad_goal': row['ad_goal']
+        })
+    return render_template('history.html', history=history)
 
 @app.route('/clear_history', methods=['POST'])
 def clear_history():
@@ -305,6 +349,35 @@ def export_history():
         as_attachment=True,
         download_name="ad_caption_history.csv"
     )
+    
+@app.route('/mark_used', methods=['POST'])
+def mark_used():
+    data = request.json
+    item_id = data.get('id')
+    caption = data.get('caption')  # Works for headlines too
+    is_used = data.get('used', True)
+
+    conn = sqlite3.connect('history.db')
+    c = conn.cursor()
+    c.execute("SELECT result, used FROM history WHERE id = ?", (item_id,))
+    row = c.fetchone()
+    if row:
+        result = json.loads(row[0])
+        used = json.loads(row[1]) if row[1] else {}
+
+        # Check if the content (caption/headline/description) exists in result
+        if (caption in result.get('captions', []) or 
+            caption in result.get('headlines', []) or 
+            caption in result.get('descriptions', [])):
+            if is_used:
+                used[caption] = True
+            else:
+                used.pop(caption, None)
+            c.execute("UPDATE history SET used = ? WHERE id = ?", (json.dumps(used), item_id))
+            conn.commit()
+
+    conn.close()
+    return jsonify({"success": True})
 
 if __name__ == '__main__':
     app.run(debug=True)

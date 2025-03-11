@@ -1,133 +1,199 @@
 document.addEventListener("DOMContentLoaded", function () {
-    // Main caption generator logic (for index.html)
+    console.log("DOM fully loaded");
+
     const adForm = document.getElementById("adForm");
     if (adForm) {
+        console.log("Main generator page detected");
+
+        const resultSection = document.getElementById("resultSection");
+        const captionsTbody = document.getElementById("captions");
+        const headlinesTbody = document.getElementById("headlines");
+        const descriptionsTbody = document.getElementById("descriptions");
+        const regenerateBtn = document.getElementById("regenerateBtn");
         const platformSelect = document.getElementById("platform");
         const campaignTypeSelect = document.getElementById("campaign_type");
-        const intakeSelect = document.getElementById("intake");
-        const toneSelect = document.getElementById("tone");
-        const minWordsContainer = document.getElementById("minWordsContainer");
-        const minWordsInput = document.getElementById("min_words");
-        const foundationContainer = document.getElementById("foundationContainer");
-        const foundationPrograms = document.getElementById("programs");
-        const addOnTextContainer = document.getElementById("addOnTextContainer");
-        const addOnTextInput = document.getElementById("add_on_text");
-        const adPreviewContainer = document.getElementById("adPreviewContainer");
-        const regenerateBtn = document.getElementById("regenerateBtn");
+        const foundationOptions = document.getElementById("foundation_options");
+        const metaFields = document.getElementById("meta_fields");
 
-        function updateMinWordsVisibility() {
-            if (minWordsContainer) {
-                minWordsContainer.style.display = platformSelect.value === "Meta" ? "block" : "none";
-            }
+        if (!resultSection || !captionsTbody || !headlinesTbody || !descriptionsTbody || !regenerateBtn || !platformSelect || !campaignTypeSelect || !foundationOptions || !metaFields) {
+            console.error("Missing DOM elements:", { resultSection, captionsTbody, headlinesTbody, descriptionsTbody, regenerateBtn, platformSelect, campaignTypeSelect, foundationOptions, metaFields });
+            return;
         }
 
-        function updateFoundationVisibility() {
-            if (foundationContainer) {
-                foundationContainer.style.display = campaignTypeSelect.value === "Foundation" ? "block" : "none";
-            }
+        let formData = {};
+
+        // Toggle Meta-specific fields
+        function togglePlatformFields() {
+            const platform = platformSelect.value;
+            metaFields.style.display = platform === "Meta" ? "block" : "none";
         }
 
-        function updateAddOnTextVisibility() {
-            if (addOnTextContainer) {
-                addOnTextContainer.style.display = platformSelect.value === "Meta" ? "block" : "none";
-            }
-        }
+        platformSelect.addEventListener("change", togglePlatformFields);
+        togglePlatformFields(); // Run on load to set initial state
 
-        setTimeout(() => {
-            updateMinWordsVisibility();
-            updateFoundationVisibility();
-            updateAddOnTextVisibility();
-        }, 100);
-
-        platformSelect.addEventListener("change", () => {
-            updateMinWordsVisibility();
-            updateAddOnTextVisibility();
+        campaignTypeSelect.addEventListener("change", function () {
+            foundationOptions.style.display = this.value === "Foundation" ? "block" : "none";
         });
-
-        campaignTypeSelect.addEventListener("change", updateFoundationVisibility);
 
         adForm.addEventListener("submit", function (e) {
             e.preventDefault();
-
-            const platform = platformSelect.value;
-            const campaignType = campaignTypeSelect.value;
-            const intake = intakeSelect.value;
-            const tone = toneSelect.value;
-            const minWords = platform === "Meta" ? minWordsInput.value : 10;
-            const addOnText = platform === "Meta" ? addOnTextInput.value.trim() : "";
-
-            const programs = (foundationPrograms && campaignType === "Foundation")
-                ? Array.from(foundationPrograms.selectedOptions).map(opt => opt.value)
-                : [];
-
-            const requestData = { 
-                platform, 
-                campaign_type: campaignType, 
-                intake, 
-                tone, 
-                min_words: minWords, 
-                add_on_text: addOnText,
-                programs 
+            const programs = Array.from(document.querySelectorAll('input[name="programs"]:checked')).map(input => input.value);
+            formData = {
+                platform: platformSelect.value,
+                campaign_type: campaignTypeSelect.value,
+                intake: document.getElementById("intake").value,
+                tone: document.getElementById("tone").value,
+                min_words: platformSelect.value === "Meta" ? document.getElementById("min_words").value : undefined,
+                add_on_text: platformSelect.value === "Meta" ? document.getElementById("add_on_text").value : undefined,
+                programs: programs,
+                target_audience: document.getElementById("target_audience").value,
+                ad_goal: document.getElementById("ad_goal").value || ""
             };
+            console.log("Form data:", formData);
+            generateCaptions(formData);
+        });
 
+        regenerateBtn.addEventListener("click", function () {
+            generateCaptions(formData);
+        });
+
+        function generateCaptions(data) {
             fetch("/generate", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(requestData),
+                body: JSON.stringify(data)
+            })
+            .then(response => {
+                if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+                return response.json();
+            })
+            .then(result => {
+                console.log("Raw result:", result);
+
+                if (result.error) {
+                    alert(result.error);
+                    return;
+                }
+
+                const latestId = result.id;
+                const platform = data.platform;
+                const captions = result.result.captions || [];
+                const headlines = result.result.headlines || [];
+                const descriptions = result.result.descriptions || [];
+
+                console.log("Processed captions:", captions);
+                console.log("Processed headlines:", headlines);
+                console.log("Processed descriptions:", descriptions);
+
+                if (platform === "Meta") {
+                    captionsTbody.innerHTML = captions.length ? captions.map(caption => `
+                        <tr>
+                            <td>${caption}</td>
+                            <td><button class="btn btn-copy" data-caption="${caption}" data-id="${latestId}">Copy</button></td>
+                        </tr>
+                    `).join('') : '<tr><td colspan="2">No captions generated.</td></tr>';
+                    headlinesTbody.innerHTML = headlines.length ? headlines.map(headline => `
+                        <tr>
+                            <td>${headline}</td>
+                            <td><button class="btn btn-copy" data-caption="${headline}" data-id="${latestId}">Copy</button></td>
+                        </tr>
+                    `).join('') : '<tr><td colspan="2">No headlines generated.</td></tr>';
+                    descriptionsTbody.innerHTML = ''; // Clear for Meta
+                } else {  // Google
+                    captionsTbody.innerHTML = ''; // Clear for Google
+                    headlinesTbody.innerHTML = headlines.length ? headlines.map(headline => `
+                        <tr>
+                            <td>${headline}</td>
+                            <td><button class="btn btn-copy" data-caption="${headline}" data-id="${latestId}">Copy</button></td>
+                        </tr>
+                    `).join('') : '<tr><td colspan="2">No headlines generated.</td></tr>';
+                    descriptionsTbody.innerHTML = descriptions.length ? descriptions.map(desc => `
+                        <tr>
+                            <td>${desc}</td>
+                            <td><button class="btn btn-copy" data-caption="${desc}" data-id="${latestId}">Copy</button></td>
+                        </tr>
+                    `).join('') : '<tr><td colspan="2">No descriptions generated.</td></tr>';
+                }
+
+                resultSection.style.display = "block";
+                regenerateBtn.style.display = "inline-block";
+
+                document.querySelectorAll('.btn-copy').forEach(btn => {
+                    btn.addEventListener('click', function () {
+                        const caption = this.dataset.caption;
+                        const itemId = this.dataset.id;
+                        navigator.clipboard.writeText(caption)
+                            .then(() => {
+                                alert('Copied to clipboard!');
+                                markAsUsed(itemId, caption);
+                            })
+                            .catch(err => console.error('Error copying:', err));
+                    });
+                });
+            })
+            .catch(error => console.error("Error generating captions:", error));
+        }
+
+        function markAsUsed(itemId, caption) {
+            fetch('/mark_used', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: itemId, caption: caption, used: true })
             })
             .then(response => response.json())
             .then(data => {
-                displayResult(data);
-                if (regenerateBtn) regenerateBtn.style.display = "block";
+                if (data.success) {
+                    console.log('Marked as used:', caption);
+                }
             })
-            .catch(error => console.error("❌ Error:", error));
-        });
-
-        if (regenerateBtn) {
-            regenerateBtn.addEventListener("click", function () {
-                adForm.dispatchEvent(new Event("submit"));
-            });
-        }
-
-        function displayResult(result) {
-            adPreviewContainer.innerHTML = "";
-
-            if (result.captions.length) {
-                result.captions.forEach((caption, index) => {
-                    const card = document.createElement("div");
-                    card.classList.add("ad-card");
-                    card.innerHTML = `<div class="ad-header">Ad Preview ${index + 1}</div><div class="ad-content">${caption}</div>`;
-                    adPreviewContainer.appendChild(card);
-                });
-            }
-
-            if (result.headlines.length) {
-                const headlinesCard = document.createElement("div");
-                headlinesCard.classList.add("ad-card");
-                headlinesCard.innerHTML = `<div class="ad-header">Ad Headlines</div><ul class="ad-list">${result.headlines.map(h => `<li>${h}</li>`).join("")}</ul>`;
-                adPreviewContainer.appendChild(headlinesCard);
-            }
-
-            if (result.descriptions.length) {
-                const descriptionsCard = document.createElement("div");
-                descriptionsCard.classList.add("ad-card");
-                descriptionsCard.innerHTML = `<div class="ad-header">Ad Descriptions</div><ul class="ad-list">${result.descriptions.map(d => `<li>${d}</li>`).join("")}</ul>`;
-                adPreviewContainer.appendChild(descriptionsCard);
-            }
+            .catch(error => console.error('Error marking as used:', error));
         }
     }
 
-    // History page logic (for history.html)
-    const historyList = document.getElementById('historyList'); // Updated to check for #historyList
-    if (historyList) {
+// History page logic
+const historyPage = document.querySelector('.history-section');
+    if (historyPage) {
+        console.log("History page detected");
+
         const copyHistoryBtn = document.getElementById('copyHistory');
         const clearHistoryBtn = document.getElementById('clearHistory');
         const exportCSVBtn = document.getElementById('exportCSV');
+        const dateFilter = document.getElementById('dateFilter');
 
+        // Section toggles
+        document.querySelectorAll('.section-toggle').forEach(toggle => {
+            toggle.addEventListener('click', function () {
+                const content = this.nextElementSibling;
+                const icon = this.querySelector('.toggle-icon');
+                content.style.display = content.style.display === 'none' ? 'block' : 'none';
+                icon.textContent = content.style.display === 'none' ? '+' : '−';
+            });
+        });
+
+        // Date toggles
+        document.querySelectorAll('.date-toggle').forEach(toggle => {
+            toggle.addEventListener('click', function () {
+                const content = this.nextElementSibling;
+                const icon = this.querySelector('.toggle-icon');
+                content.style.display = content.style.display === 'none' ? 'block' : 'none';
+                icon.textContent = content.style.display === 'none' ? '+' : '−';
+            });
+        });
+
+        // Date filter
+        dateFilter.addEventListener('change', function () {
+            const selectedDate = this.value;
+            document.querySelectorAll('.date-group').forEach(group => {
+                const date = group.querySelector('.date-toggle').textContent.trim().split(' ')[0];
+                group.style.display = (selectedDate && date !== selectedDate) ? 'none' : 'block';
+            });
+        });
+
+        // Copy History
         if (copyHistoryBtn) {
             copyHistoryBtn.addEventListener('click', function () {
-                const text = Array.from(historyList.getElementsByTagName('li'))
-                    .map(item => item.textContent.trim())
+                const text = Array.from(document.querySelectorAll('.history-row'))
+                    .map(row => row.textContent.trim())
                     .join('\n\n');
                 navigator.clipboard.writeText(text)
                     .then(() => alert('History copied to clipboard!'))
@@ -135,6 +201,7 @@ document.addEventListener("DOMContentLoaded", function () {
             });
         }
 
+        // Clear History
         if (clearHistoryBtn) {
             clearHistoryBtn.addEventListener('click', function () {
                 if (confirm('Are you sure you want to clear all history?')) {
@@ -145,7 +212,9 @@ document.addEventListener("DOMContentLoaded", function () {
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
-                            historyList.innerHTML = '<li>No history available.</li>';
+                            document.querySelectorAll('.section-content').forEach(content => {
+                                content.innerHTML = '<p>No campaigns available.</p>';
+                            });
                             alert(data.message);
                         }
                     })
@@ -154,10 +223,36 @@ document.addEventListener("DOMContentLoaded", function () {
             });
         }
 
+        // Export CSV
         if (exportCSVBtn) {
             exportCSVBtn.addEventListener('click', function () {
                 window.location.href = '/export_history';
             });
         }
+
+        // Used Toggle
+        document.querySelectorAll('.used-toggle').forEach(toggle => {
+            toggle.addEventListener('change', function () {
+                const caption = this.dataset.caption;
+                const itemId = this.dataset.id;
+                const isChecked = this.checked;
+
+                fetch('/mark_used', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: itemId, caption: caption, used: isChecked })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const span = this.previousElementSibling;
+                        if (span) {
+                            span.classList.toggle('used', isChecked);
+                        }
+                    }
+                })
+                .catch(error => console.error('Error updating used status:', error));
+            });
+        });
     }
 });
