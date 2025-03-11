@@ -13,7 +13,7 @@ app = Flask(__name__)
 
 # Load API key from .env
 load_dotenv()
-API_KEY = os.getenv("GOOGLE_API_KEY") or "AIzaSyAxVViNcXOlgFom5Z05AzohgAJRJh8q7SI"  # Fallback for testing
+API_KEY = os.getenv("GOOGLE_API_KEY")
 genai.configure(api_key=API_KEY)
 
 
