@@ -58,30 +58,39 @@ def home():
 @app.route('/generate', methods=['POST'])
 def generate():
     data = request.json
-    platform = data['platform']
-    campaign_type = data['campaign_type']
-    intake = data['intake']
-    tone = data['tone']
-    min_words = int(data.get('min_words', 10))
-    selected_programs = data.get('programs', [])
+    platform = data.get('platform')
+    campaign_type = data.get('campaign_type')
+    intake = data.get('intake')
+    tone = data.get('tone')
+    min_words = int(data.get('min_words', 10)) if platform == "Meta" else 10
     add_on_text = data.get('add_on_text', '').strip()
+    programs = data.get('programs', [])
 
-    # Construct the appropriate prompt
-    if campaign_type == "Foundation":
-        programs_text = ", ".join(selected_programs) if selected_programs else ", ".join(FOUNDATION_PROGRAMS)
-        program_text = f"for QIU's {intake} Intake focusing on {programs_text}"
+    # Validate required fields
+    if not all([platform, campaign_type, intake, tone]):
+        return jsonify({"error": "All fields except Add-On Text are required."}), 400
+
+    # Handle campaign type logic
+    if campaign_type == "General":
+        campaign_desc = f"an intake promotion for Quest International University in {intake}"
+    elif campaign_type == "Foundation" and programs:
+        campaign_desc = f"the {', '.join(programs)} program(s) at Quest International University in {intake}"
     else:
-        program_text = f"for QIU's {intake} Intake - {campaign_type} program"
+        campaign_desc = f"the {campaign_type} program at Quest International University in {intake}"
 
-    # ✅ **Modify Prompt to Integrate Add-On Text Naturally**
-    if add_on_text:
-        add_on_prompt = f" Try to incorporate the theme of '{add_on_text}' naturally in the copy."
-    else:
-        add_on_prompt = ""
+    # Add-on text prompt
+    add_on_prompt = f" Incorporate the theme of '{add_on_text}' naturally in the copy." if add_on_text else ""
 
+    # Construct platform-specific prompt
     if platform == "Meta":
         prompt = f"""
-        Generate exactly 5 ad captions (each at least {min_words} words) and 5 ad headlines (exactly 30 characters) {program_text} in {tone} tone.{add_on_prompt}
+        Generate exactly 5 engaging Meta ad captions (each at least {min_words} words) and 5 ad headlines (exactly 30 characters) to promote {campaign_desc} in a {tone} tone:
+
+        **Details:**
+        - University: Quest International University
+        - Intake: {intake}
+
+        {add_on_prompt}
 
         **Format strictly as follows:**
         Captions:
@@ -98,29 +107,37 @@ def generate():
         4. ...
         5. ...
         """
-    else:  # Google Ads
+    else:  # Google
         prompt = f"""
-        Generate exactly 15 ad headlines (each max 30 characters) and 4 ad descriptions (each max 90 characters) {program_text} in {tone} tone.{add_on_prompt}
+        Generate exactly 5 engaging Google ad headlines (exactly 30 characters) and 5 ad descriptions (exactly 90 characters) to promote {campaign_desc} in a {tone} tone:
+
+        **Details:**
+        - University: Quest International University
+        - Intake: {intake}
+
+        {add_on_prompt}
 
         **Format strictly as follows:**
         Headlines:
         1. ...
         2. ...
-        ...
-        15. ...
+        3. ...
+        4. ...
+        5. ...
 
         Descriptions:
         1. ...
         2. ...
         3. ...
         4. ...
+        5. ...
         """
 
-    # ✅ AI Call
-    model = genai.GenerativeModel("gemini-2.0-flash-lite")
+    # AI Call
+    model = genai.GenerativeModel("gemini-2.0-flash-lite")  # Replace with your model
     response = model.generate_content(prompt)
 
-    # ✅ Process AI Response
+    # Process AI Response
     captions, headlines, descriptions = [], [], []
     if response and hasattr(response, "candidates") and response.candidates:
         text = response.candidates[0].content.parts[0].text.split("\n")
@@ -129,11 +146,11 @@ def generate():
         for line in text:
             line = line.strip()
             if re.match(r"^Captions?:", line, re.IGNORECASE):
-                section = "captions" if platform == "Meta" else None
+                section = "captions"
             elif re.match(r"^Headlines?:", line, re.IGNORECASE):
                 section = "headlines"
             elif re.match(r"^Descriptions?:", line, re.IGNORECASE):
-                section = "descriptions" if platform == "Google" else None
+                section = "descriptions"
             elif section and re.match(r"^\d+\.\s", line):
                 content = line.split(".", 1)[1].strip()
                 if section == "captions":
@@ -143,69 +160,94 @@ def generate():
                 elif section == "descriptions":
                     descriptions.append(content)
 
-    # ✅ Ensure Proper Data Structure
+    # Ensure proper data structure
     result = {
         "captions": captions[:5] if platform == "Meta" else [],
-        "headlines": headlines[:5] if platform == "Meta" else headlines[:15],
-        "descriptions": descriptions[:4] if platform == "Google" else []
+        "headlines": headlines[:5],
+        "descriptions": descriptions[:5] if platform == "Google" else []
     }
 
-    save_to_history(platform, campaign_type, intake, tone, result)
-    return jsonify(result)
-
-@app.route('/generate_event', methods=['POST'])
-def generate_event():
-    data = request.json
-    event_name = data['event_name']
-    event_venue = data['event_venue']
-    event_time = "2:00pm - 5:00pm"  # Fixed format
-    tone = data['tone']
-    add_on_text = data.get('add_on_text', '').strip()
-
-    # Constructing the prompt
-    prompt = f"""
-    Generate exactly 5 engaging Meta ad captions to promote the following event in a {tone} tone:
-
-    **Event Details:**
-    - Event Name: {event_name}
-    - Venue: {event_venue}
-    - Time: {event_time}
-
-    {"Additional Context: " + add_on_text if add_on_text else ""}
-
-    **Format strictly as follows:**
-    Captions:
-    1. ...
-    2. ...
-    3. ...
-    4. ...
-    5. ...
-    """
-
-    model = genai.GenerativeModel("gemini-2.0-flash-lite")
-    response = model.generate_content(prompt)
-
-    captions = []
-    if response and hasattr(response, "candidates") and response.candidates:
-        text = response.candidates[0].content.parts[0].text.split("\n")
-        section = None
-
-        for line in text:
-            line = line.strip()
-            if re.match(r"^Captions?:", line, re.IGNORECASE):
-                section = "captions"
-            elif section and re.match(r"^\d+\.\s", line):
-                content = line.split(".", 1)[1].strip()
-                captions.append(content)
-
-    # Ensure we return exactly 5 captions
-    result = {"captions": captions[:5]}
-
     # Save to history
-    save_to_history("Meta", "Event", event_name, tone, result)
+    save_to_history(platform, campaign_type, intake, tone, result)
 
     return jsonify(result)
 
+@app.route('/event_caption', methods=['GET', 'POST'])
+def event_caption():
+    if request.method == 'POST':
+        data = request.json
+        event_name = data.get('event_name')
+        event_venue = data.get('event_venue')
+        event_date = data.get('event_date')
+        event_time = data.get('event_time')
+        tone = data.get('tone')
+        min_words = int(data.get('min_words', 10))
+        add_on_text = data.get('add_on_text', '').strip()
+
+        if not all([event_name, event_venue, event_date, event_time, tone]):
+            return jsonify({"error": "All fields except Add-On Text are required."}), 400
+
+        add_on_prompt = f" Incorporate the theme of '{add_on_text}' naturally in the copy." if add_on_text else ""
+
+        prompt = f"""
+        Generate exactly 5 engaging Meta ad captions (each at least {min_words} words) and 5 ad headlines (exactly 30 characters) to promote the following event organized by Quest International University in a {tone} tone:
+
+        **Event Details:**
+        - Event Name: {event_name}
+        - Venue: {event_venue}
+        - Date: {event_date}
+        - Time: {event_time}
+        - University: Quest International University
+
+        {add_on_prompt}
+
+        **Format strictly as follows:**
+        Captions:
+        1. ...
+        2. ...
+        3. ...
+        4. ...
+        5. ...
+
+        Headlines:
+        1. ...
+        2. ...
+        3. ...
+        4. ...
+        5. ...
+        """
+
+        model = genai.GenerativeModel("gemini-2.0-flash-lite")
+        response = model.generate_content(prompt)
+
+        captions, headlines = [], []
+        if response and hasattr(response, "candidates") and response.candidates:
+            text = response.candidates[0].content.parts[0].text.split("\n")
+            section = None
+
+            for line in text:
+                line = line.strip()
+                if re.match(r"^Captions?:", line, re.IGNORECASE):
+                    section = "captions"
+                elif re.match(r"^Headlines?:", line, re.IGNORECASE):
+                    section = "headlines"
+                elif section and re.match(r"^\d+\.\s", line):
+                    content = line.split(".", 1)[1].strip()
+                    if section == "captions":
+                        captions.append(content)
+                    elif section == "headlines":
+                        headlines.append(content)
+
+        result = {
+            "captions": captions[:5],
+            "headlines": headlines[:5]
+        }
+
+        save_to_history("Meta", "Event", event_name, tone, result)
+
+        return jsonify(result)
+
+    return render_template('event_caption.html')
 
 @app.route('/history')
 def history():
@@ -266,5 +308,3 @@ def export_history():
 
 if __name__ == '__main__':
     app.run(debug=True)
-
-#newcommit

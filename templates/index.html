@@ -4,77 +4,87 @@
     <meta charset="UTF-8">
     <title>Ad Caption Generator</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="container">
-        <h1>Ad Caption Generator</h1>
+    <div class="app-container">
+        <header class="app-header">
+            <h1>QIU Ad Caption Generator</h1>
+            <nav>
+                <a href="/event_caption">Event Captions</a>
+                <a href="/history">History</a>
+            </nav>
+        </header>
         
-        <form id="adForm">
-            <label>Platform</label>
-            <select id="platform">
-                <option value="Meta">Meta</option>
-                <option value="Google">Google</option>
-            </select>
+        <main class="card">
+            <form id="adForm" class="form-grid">
+                <div class="form-group">
+                    <label for="platform">Platform</label>
+                    <select id="platform">
+                        <option value="Meta">Meta</option>
+                        <option value="Google">Google</option>
+                    </select>
+                </div>
 
-            <label>Campaign Type</label>
-            <select id="campaign_type">
-                <option value="General">General</option>
-                <option value="Foundation">Foundation</option>
-                <option value="MBBS">MBBS</option>
-                <option value="Pharmacy">Pharmacy</option>
-            </select>
+                <div class="form-group">
+                    <label for="campaign_type">Campaign Type</label>
+                    <select id="campaign_type">
+                        <option value="General">General</option>
+                        <option value="Foundation">Foundation</option>
+                        <option value="MBBS">MBBS</option>
+                        <option value="Pharmacy">Pharmacy</option>
+                    </select>
+                </div>
 
-            <!-- ✅ Foundation Program Selection (Initially Hidden) -->
-            <div id="foundationContainer" style="display: none;">
-                <label for="programs">Select Foundation Program</label>
-                <select id="programs" name="programs" multiple>
-                    <option value="All">All Foundation Programs</option>
-                    <option value="Foundation in Science">Foundation in Science</option>
-                    <option value="Foundation in Arts">Foundation in Arts</option>
-                    <option value="Foundation in Business">Foundation in Business</option>
-                    <option value="ACCA Foundation in Accountancy">ACCA Foundation in Accountancy</option>
-                </select>
-            </div>
+                <div class="form-group" id="foundationContainer" style="display: none;">
+                    <label for="programs">Foundation Programs</label>
+                    <select id="programs" name="programs" multiple>
+                        <option value="All">All Programs</option>
+                        <option value="Foundation in Science">Science</option>
+                        <option value="Foundation in Arts">Arts</option>
+                        <option value="Foundation in Business">Business</option>
+                        <option value="ACCA Foundation in Accountancy">ACCA</option>
+                    </select>
+                </div>
 
-            <label>Intake</label>
-            <select id="intake">
-                <option value="February">February</option>
-                <option value="April">April</option>
-                <option value="July">July</option>
-                <option value="October">October</option>
-            </select>
+                <div class="form-group">
+                    <label for="intake">Intake</label>
+                    <select id="intake">
+                        <option value="February">February</option>
+                        <option value="April">April</option>
+                        <option value="July">July</option>
+                        <option value="October">October</option>
+                    </select>
+                </div>
 
-            <label>Tone</label>
-            <select id="tone">
-                <option value="Casual">Casual</option>
-                <option value="Urgency">Urgency</option>
-                <option value="Promotional">Promotional</option>
-            </select>
+                <div class="form-group">
+                    <label for="tone">Tone</label>
+                    <select id="tone">
+                        <option value="Casual">Casual</option>
+                        <option value="Urgency">Urgency</option>
+                        <option value="Promotional">Promotional</option>
+                    </select>
+                </div>
 
-            <!-- ✅ Minimum Words (Only for Meta) -->
-            <div id="minWordsContainer" style="display: none;">
-                <label>Minimum Words (Meta)</label>
-                <input type="number" id="min_words" name="min_words" min="5" value="10">
-            </div>
+                <div class="form-group" id="minWordsContainer" style="display: none;">
+                    <label for="min_words">Min Words (Meta)</label>
+                    <input type="number" id="min_words" min="5" value="10">
+                </div>
 
-            <!-- Add-On Text for Meta (Initially Hidden) -->
-            <div id="addOnTextContainer" style="display: none;">
-                <label for="add_on_text">Add-On Text (Meta Only)</label>
-                <input type="text" id="add_on_text" name="add_on_text" placeholder="Enter keywords to include...">
-            </div>
-            
+                <div class="form-group" id="addOnTextContainer" style="display: none;">
+                    <label for="add_on_text">Add-On Text</label>
+                    <input type="text" id="add_on_text" placeholder="e.g., Special Offer">
+                </div>
 
+                <button type="submit" class="btn btn-primary">Generate</button>
+            </form>
 
-            <button type="submit">Generate</button>
-        </form>
-
-        <div id="resultSection">
-            <h2>Generated Ad Copy</h2>
-            <div id="adPreviewContainer"></div>
-        </div>
-        
-
-        <a href="/history">View History</a>
+            <section id="resultSection" class="results">
+                <h2>Generated Ad Copy</h2>
+                <div id="adPreviewContainer"></div>
+                <button id="regenerateBtn" class="btn btn-secondary" style="display: none;">Regenerate</button>
+            </section>
+        </main>
     </div>
 
     <script src="{{ url_for('static', filename='script.js') }}"></script>

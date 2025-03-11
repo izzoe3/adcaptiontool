@@ -2,56 +2,66 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Generated History</title>
+    <title>QIU Generated History</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="container" id="historyPage">  <!-- ✅ Added ID for script detection -->
-        <h1>Generated History</h1>
-        <ul id="historyList">
-            {% for item in history %}
-                <li class="history-item">
-                    <h3>{{ item.timestamp }}</h3>
-                    <p><strong>Platform:</strong> {{ item.platform }}</p>
-                    <p><strong>Campaign Type:</strong> {{ item.campaign_type }}</p>
-                    <p><strong>Intake:</strong> {{ item.intake }}</p>
-                    <p><strong>Tone:</strong> {{ item.tone }}</p>
+    <div class="app-container">
+        <header class="app-header">
+            <h1>QIU Generated History</h1>
+            <nav>
+                <a href="/">Main Generator</a>
+                <a href="/event_caption">Event Captions</a>
+            </nav>
+        </header>
+        
+        <main class="card">
+            <ul id="historyList" class="history-list">
+                {% for item in history %}
+                    <li class="history-item">
+                        <h3>{{ item.timestamp }}</h3>
+                        <p><strong>Platform:</strong> {{ item.platform }}</p>
+                        <p><strong>Type:</strong> {{ item.campaign_type }}</p>
+                        <p><strong>{{ 'Event' if item.campaign_type == 'Event' else 'Intake' }}:</strong> {{ item.intake }}</p>
+                        <p><strong>Tone:</strong> {{ item.tone }}</p>
 
-                    {% if item.result.captions %}
-                        <h4>Captions:</h4>
-                        <ul>
-                            {% for caption in item.result.captions %}
-                                <li>{{ caption }}</li>
-                            {% endfor %}
-                        </ul>
-                    {% endif %}
+                        {% if item.result.captions %}
+                            <h4>Captions</h4>
+                            <ul>
+                                {% for caption in item.result.captions %}
+                                    <li>{{ caption }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
 
-                    {% if item.result.headlines %}
-                        <h4>Headlines:</h4>
-                        <ul>
-                            {% for headline in item.result.headlines %}
-                                <li>{{ headline }}</li>
-                            {% endfor %}
-                        </ul>
-                    {% endif %}
+                        {% if item.result.headlines %}
+                            <h4>Headlines</h4>
+                            <ul>
+                                {% for headline in item.result.headlines %}
+                                    <li>{{ headline }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
 
-                    {% if item.result.descriptions %}
-                        <h4>Descriptions (Google Ads):</h4>
-                        <ul>
-                            {% for desc in item.result.descriptions %}
-                                <li>{{ desc }}</li>
-                            {% endfor %}
-                        </ul>
-                    {% endif %}
-                </li>
-            {% endfor %}
-        </ul>
+                        {% if item.result.descriptions %}
+                            <h4>Descriptions</h4>
+                            <ul>
+                                {% for desc in item.result.descriptions %}
+                                    <li>{{ desc }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                    </li>
+                {% endfor %}
+            </ul>
 
-        <button id="copyHistory">Copy History</button>
-        <button id="clearHistory">Clear History</button>
-        <button id="exportCSV">Export to CSV</button>
-
-        <a href="/">Back to Home</a>
+            <div class="button-group">
+                <button id="copyHistory" class="btn btn-secondary">Copy</button>
+                <button id="clearHistory" class="btn btn-danger">Clear</button>
+                <button id="exportCSV" class="btn btn-primary">Export CSV</button>
+            </div>
+        </main>
     </div>
 
     <script src="{{ url_for('static', filename='script.js') }}"></script>
