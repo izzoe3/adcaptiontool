@@ -115,6 +115,32 @@ body {
     outline: none;
 }
 
+/* Campaigns Table (new for campaigns.html) */
+.campaigns-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    min-width: 1200px; /* Wide enough for 9 columns */
+}
+
+.campaigns-table th,
+.campaigns-table td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #e0e4e8;
+    white-space: nowrap; /* Prevent text wrapping */
+}
+
+.campaigns-table th {
+    background-color: #f9fafb;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.campaigns-table tr:hover {
+    background-color: #f9fafb;
+}
+
 /* Buttons */
 .btn {
     padding: 12px 20px;
