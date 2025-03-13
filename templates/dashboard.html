@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>QIU Marketing Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <h1>QIU Marketing Dashboard</h1>
+            <nav>
+                <a href="/generator">Ad Generator</a>
+                <a href="/persona">Persona Generator</a>
+                <a href="/event_caption">Event Captions</a>
+                <a href="/campaigns">Meta Campaigns</a>
+                <a href="/history">History</a>
+            </nav>
+        </header>
+        
+        <main class="dashboard-main">
+            <h2>Your Marketing Hub</h2>
+            <p>Create, manage, and track your marketing efforts with ease.</p>
+
+            <section class="tools-section">
+                <h3>Tools</h3>
+                <div class="button-group">
+                    <a href="/generator" class="btn btn-primary">Ad Captions</a>
+                    <a href="/persona" class="btn btn-primary">Persona</a>
+                    <a href="/event_caption" class="btn btn-primary">Event Captions</a>
+                    <a href="/campaigns" class="btn btn-primary">Meta Campaigns</a>
+                    <a href="/history" class="btn btn-primary">History</a>
+                </div>
+            </section>
+
+            <section class="recent-activity">
+                <h3>Recent Activity</h3>
+                {% with history = get_history() %}
+                    {% if history %}
+                        <table class="dashboard-table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Tool</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in history|sort(attribute='timestamp', reverse=True)|slice(5) %}
+                                    <tr>
+                                        <td>{{ item.timestamp }}</td>
+                                        <td>{{ item.platform }}</td>
+                                        <td>{{ item.ad_goal or item.campaign_type }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% else %}
+                        <p>No recent activity yet.</p>
+                    {% endif %}
+                {% endwith %}
+            </section>
+        </main>
+    </div>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
