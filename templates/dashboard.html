@@ -38,6 +38,7 @@
                 <h3>Recent Activity</h3>
                 {% with history = get_history() %}
                     {% if history %}
+                        <p>{{ history|length }} entries found</p>
                         <table class="dashboard-table">
                             <thead>
                                 <tr>

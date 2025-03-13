@@ -165,7 +165,7 @@ def get_history():
     conn = sqlite3.connect('history.db')
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
-    c.execute('SELECT * FROM history ORDER BY timestamp DESC LIMIT 5')
+    c.execute('SELECT * FROM history')
     history = c.fetchall()
     conn.close()
     return history
