@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Link Tracking Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <h1>Link Tracking Dashboard</h1>
+            <nav>
+                <a href="/">Dashboard</a>
+                <a href="/generator">Ad Generator</a>
+                <a href="/persona">Persona Generator</a>
+                <a href="/event_caption">Event Captions</a>
+                <a href="/campaigns">Meta Campaigns</a>
+                <a href="/history">History</a>
+            </nav>
+        </header>
+        
+        <main class="dashboard-main">
+            <h2>Your Tracked Links</h2>
+            {% if links %}
+                <table class="dashboard-table">
+                    <thead>
+                        <tr>
+                            <th>Short URL</th>
+                            <th>Original URL</th>
+                            <th>Created At</th>
+                            <th>Clicks</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for link in links %}
+                            <tr>
+                                <td><a href="{{ request.host_url }}{{ link.short_code }}" target="_blank">{{ request.host_url }}{{ link.short_code }}</a></td>
+                                <td>{{ link.original_url }}</td>
+                                <td>{{ link.created_at }}</td>
+                                <td>{{ link.click_count }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p>No links have been shortened yet.</p>
+            {% endif %}
+        </main>
+    </div>
+</body>
+</html>

@@ -7,6 +7,8 @@ import json
 import re
 from datetime import datetime
 import os
+import random
+import string
 from dotenv import load_dotenv
 from facebook_business.adobjects.adaccount import AdAccount
 from facebook_business.adobjects.campaign import Campaign
@@ -20,8 +22,6 @@ from bs4 import BeautifulSoup
 import requests
 import time
 import logging
-import random
-import string
 
 app = Flask(__name__)
 
@@ -66,7 +66,7 @@ def init_db():
     c.execute('''CREATE TABLE IF NOT EXISTS short_links
                  (id INTEGER PRIMARY KEY AUTOINCREMENT,
                   short_code TEXT UNIQUE,
-                  original_url TEXT,
+                  original_url TEXT UNIQUE,
                   created_at TEXT)''')
     c.execute('''CREATE TABLE IF NOT EXISTS link_clicks
                  (id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -90,6 +90,10 @@ def save_to_history(platform, campaign_type, intake, tone, result, target_audien
                   (timestamp, platform, campaign_type, intake, tone, result_json, used_json, target_audience, ad_goal))
         conn.commit()
     logging.info(f"Saved to history: {platform}, {campaign_type}, {intake}")
+    
+# Short link generation
+def generate_short_code(length=5):
+    return ''.join(random.choices(string.ascii_letters + string.digits, k=length))    
 
 def format_budget(budget):
     if budget == "N/A" or not budget:
@@ -611,29 +615,29 @@ def refresh_campaigns():
     fetch_meta_campaigns_from_api(meta_account_id)
     return redirect(url_for('campaigns'))
 
-#Link shorterner
-
-def generate_short_code(length=5):
-    return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
-
+# New Shortener Logic with Duplicate Check
 @app.route('/shorten', methods=['POST'])
 def shorten_link():
     original_url = request.json.get('url')
     if not original_url or not original_url.startswith('http'):
         return jsonify({"error": "Valid URL required"}), 400
 
-    short_code = generate_short_code()
-    while True:  # Ensure uniqueness
-        with sqlite3.connect('history.db') as conn:
-            c = conn.cursor()
+    with sqlite3.connect('history.db') as conn:
+        c = conn.cursor()
+        c.execute("SELECT id, short_code FROM short_links WHERE original_url = ?", (original_url,))
+        existing = c.fetchone()
+        if existing:
+            short_url = f"{request.host_url}{existing[1]}"
+            return jsonify({"short_url": short_url, "id": existing[0], "message": "URL already shortened"})
+
+        short_code = generate_short_code()
+        while True:
             c.execute("SELECT id FROM short_links WHERE short_code = ?", (short_code,))
             if not c.fetchone():
                 break
-        short_code = generate_short_code()
+            short_code = generate_short_code()
 
-    created_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    with sqlite3.connect('history.db') as conn:
-        c = conn.cursor()
+        created_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         c.execute("INSERT INTO short_links (short_code, original_url, created_at) VALUES (?, ?, ?)",
                   (short_code, original_url, created_at))
         conn.commit()
@@ -642,6 +646,7 @@ def shorten_link():
     short_url = f"{request.host_url}{short_code}"
     return jsonify({"short_url": short_url, "id": short_link_id})
 
+# Redirect and Track Clicks
 @app.route('/<short_code>')
 def redirect_link(short_code):
     with sqlite3.connect('history.db') as conn:
@@ -653,33 +658,29 @@ def redirect_link(short_code):
         
         short_link_id, original_url = result
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        ip_address = request.remote_addr  # Optional: track IP
+        ip_address = request.remote_addr
         c.execute("INSERT INTO link_clicks (short_link_id, timestamp, ip_address) VALUES (?, ?, ?)",
                   (short_link_id, timestamp, ip_address))
         conn.commit()
 
     return redirect(original_url)
 
-@app.route('/link_stats/<int:link_id>')
-def get_link_stats(link_id):
+# Links Dashboard
+@app.route('/links')
+def links_dashboard():
     with sqlite3.connect('history.db') as conn:
+        conn.row_factory = sqlite3.Row
         c = conn.cursor()
-        c.execute("SELECT short_code, original_url, created_at FROM short_links WHERE id = ?", (link_id,))
-        link = c.fetchone()
-        if not link:
-            return jsonify({"error": "Link not found"}), 404
-        
-        c.execute("SELECT timestamp, ip_address FROM link_clicks WHERE short_link_id = ?", (link_id,))
-        clicks = c.fetchall()
+        c.execute("""
+            SELECT sl.id, sl.short_code, sl.original_url, sl.created_at, COUNT(lc.id) as click_count
+            FROM short_links sl
+            LEFT JOIN link_clicks lc ON sl.id = lc.short_link_id
+            GROUP BY sl.id, sl.short_code, sl.original_url, sl.created_at
+            ORDER BY sl.created_at DESC
+        """)
+        links = [dict(row) for row in c.fetchall()]
     
-    stats = {
-        "short_url": f"{request.host_url}{link[0]}",
-        "original_url": link[1],
-        "created_at": link[2],
-        "click_count": len(clicks),
-        "clicks": [{"timestamp": click[0], "ip": click[1]} for click in clicks]
-    }
-    return jsonify(stats)
+    return render_template('links.html', links=links)
 
 if __name__ == '__main__':
     app.run(debug=True)

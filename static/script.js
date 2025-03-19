@@ -1,7 +1,7 @@
 document.addEventListener("DOMContentLoaded", function () {
     console.log("DOM fully loaded");
 
-    // Ad Generator Page Logic
+    // Ad Generator Page Logic (unchanged)
     const adForm = document.getElementById("adForm");
     if (adForm) {
         console.log("Main generator page detected");
@@ -150,7 +150,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
-    // History Page Logic
+    // History Page Logic (unchanged)
     const historyPage = document.querySelector('.history-section');
     if (historyPage) {
         console.log("History page detected");
@@ -249,7 +249,7 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
-    // Link Shortener Logic (Updated)
+    // Link Shortener Logic (Simplified)
     const shortenForm = document.getElementById("shortenForm");
     if (shortenForm) {
         shortenForm.addEventListener("submit", function (e) {
@@ -266,31 +266,11 @@ document.addEventListener("DOMContentLoaded", function () {
                 const resultDiv = document.getElementById("shortLinkResult");
                 resultDiv.innerHTML = `
                     <p>Short URL: <a href="${data.short_url}" target="_blank">${data.short_url}</a></p>
-                    <button class="btn btn-primary view-stats-btn" data-link-id="${data.id}">View Stats</button>
-                    <div id="stats-${data.id}"></div>
+                    ${data.message ? '<p>' + data.message + '</p>' : ''}
+                    <p>Check stats in <a href="/links">Links Dashboard</a></p>
                 `;
-
-                // Attach event listener to the "View Stats" button
-                const statsBtn = resultDiv.querySelector('.view-stats-btn');
-                statsBtn.addEventListener('click', function () {
-                    const linkId = this.getAttribute('data-link-id');
-                    getStats(linkId);
-                });
             })
             .catch(error => alert("Error: " + error.message));
         });
-    }
-
-    function getStats(linkId) {
-        fetch(`/link_stats/${linkId}`)
-        .then(response => response.json())
-        .then(data => {
-            const statsDiv = document.getElementById(`stats-${linkId}`);
-            statsDiv.innerHTML = `
-                <p>Clicks: ${data.click_count}</p>
-                <ul>${data.clicks.map(click => `<li>${click.timestamp} (IP: ${click.ip})</li>`).join('')}</ul>
-            `;
-        })
-        .catch(error => console.error("Error fetching stats:", error));
     }
 });
