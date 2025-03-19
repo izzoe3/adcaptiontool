@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>QIU Meta Campaigns</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <h1>Meta Campaigns</h1>
+            <nav>
+                <a href="/">Dashboard</a>
+                <a href="/generator">Ad Generator</a>
+                <a href="/persona">Persona Generator</a>
+                <a href="/event_caption">Event Captions</a>
+                <a href="/history">History</a>
+            </nav>
+        </header>
+        
+        <main class="dashboard-main">
+            <h2>Active Campaigns Overview</h2>
+            <div class="action-bar">
+                <a href="{{ url_for('refresh_campaigns') }}" class="btn btn-primary">Refresh Campaigns</a>
+            </div>
+
+            {% if error_message %}
+                <p class="error-message">{{ error_message }}</p>
+            {% endif %}
+
+            {% if meta_campaigns and meta_campaigns|length > 0 %}
+                <table class="campaigns-table">
+                    <thead>
+                        <tr>
+                            <th>Campaign Details</th>
+                            <th>Ad Set Details</th>
+                            <th>Ad Name</th>
+                            <th>Headline</th>
+                            <th>Caption</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for campaign in meta_campaigns %}
+                            {% for adset in campaign.audience %}
+                                {% for ad in adset.ads %}
+                                    <tr>
+                                        <td data-fulltext="Name: {{ campaign.name }}, Objective: {{ campaign.objective }}">
+                                            {{ campaign.name }}<br><small>{{ campaign.objective }}</small>
+                                        </td>
+                                        <td data-fulltext="Budget: {{ campaign.daily_budget }}, Age: {{ adset.age_min }}-{{ adset.age_max }}, Locations: {{ adset.locations|join(', ') }}">
+                                            Budget: {{ campaign.daily_budget }}<br>
+                                            Age: {{ adset.age_min }}-{{ adset.age_max }}<br>
+                                            Locations: <ul>{% for loc in adset.locations %}<li>{{ loc }}</li>{% endfor %}</ul>
+                                        </td>
+                                        <td data-fulltext="{{ ad.name }}">{{ ad.name }}</td>
+                                        <td data-fulltext="{{ ad.headlines|first|default('N/A') }}">{{ ad.headlines|first|default('N/A') }}</td>
+                                        <td data-fulltext="{{ ad.captions|join(' ') }}">{{ ad.captions|join(' ') }}</td>
+                                    </tr>
+                                {% endfor %}
+                                {% if not adset.ads %}
+                                    <tr>
+                                        <td data-fulltext="Name: {{ campaign.name }}, Objective: {{ campaign.objective }}">
+                                            {{ campaign.name }}<br><small>{{ campaign.objective }}</small>
+                                        </td>
+                                        <td data-fulltext="Budget: {{ campaign.daily_budget }}, Age: {{ adset.age_min }}-{{ adset.age_max }}, Locations: {{ adset.locations|join(', ') }}">
+                                            Budget: {{ campaign.daily_budget }}<br>
+                                            Age: {{ adset.age_min }}-{{ adset.age_max }}<br>
+                                            Locations: <ul>{% for loc in adset.locations %}<li>{{ loc }}</li>{% endfor %}</ul>
+                                        </td>
+                                        <td colspan="3" data-fulltext="No active ads">No active ads</td>
+                                    </tr>
+                                {% endif %}
+                            {% endfor %}
+                            {% if not campaign.audience %}
+                                <tr>
+                                    <td data-fulltext="Name: {{ campaign.name }}, Objective: {{ campaign.objective }}">
+                                        {{ campaign.name }}<br><small>{{ campaign.objective }}</small>
+                                    </td>
+                                    <td colspan="4" data-fulltext="No active ad sets">No active ad sets</td>
+                                </tr>
+                            {% endif %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+                <!-- Enhanced Debug Output -->
+                <h3>Debug Data</h3>
+                <pre>Total Campaigns: {{ meta_campaigns|length }}</pre>
+                <pre>Full Data: {{ meta_campaigns|tojson(indent=2) }}</pre>
+            {% else %}
+                <p>No active campaigns found. Try refreshing.</p>
+            {% endif %}
+        </main>
+    </div>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

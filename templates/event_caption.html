@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Event Caption Generator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <h1>QIU Marketing Dashboard</h1>
+            <nav>
+                <a href="/generator">Ad Generator</a>
+                <a href="/persona">Persona Generator</a>
+                <a href="/event_caption">Event Captions</a>
+                <a href="/campaigns">Meta Campaigns</a>
+                <a href="/history">History</a>
+            </nav>
+        </header>
+        
+        <main class="card">
+            <form id="eventForm" class="generator-form">
+                <label for="event_name">Event Name:</label>
+                <input type="text" id="event_name" name="event_name" required>
+
+                <label for="event_venue">Event Venue:</label>
+                <input type="text" id="event_venue" name="event_venue" required>
+
+                <label for="event_date">Event Date:</label>
+                <input type="text" id="event_date" name="event_date" placeholder="e.g., 15th October 2023" required>
+
+                <label for="event_time">Event Time:</label>
+                <input type="text" id="event_time" name="event_time" placeholder="e.g., 9:00 AM - 5:00 PM" required>
+
+                <label for="tone">Tone:</label>
+                <select id="tone" name="tone" required>
+                    <option value="Professional">Professional</option>
+                    <option value="Casual">Casual</option>
+                    <option value="Exciting">Exciting</option>
+                    <option value="Inspirational">Inspirational</option>
+                    <option value="Urgent">Urgent</option>
+                    <option value="Friendly">Friendly</option>
+                </select>
+
+                <label for="target_audience">Target Audience:</label>
+                <select id="target_audience" name="target_audience" required>
+                    <option value="Students">Students</option>
+                    <option value="Parents">Parents</option>
+                    <option value="Working Adults">Working Adults</option>
+                    <option value="General Public">General Public</option>
+                </select>
+
+                <label for="ad_goal">Ad Goal (Optional):</label>
+                <select id="ad_goal" name="ad_goal">
+                    <option value="">None</option>
+                    <option value="Awareness">Awareness</option>
+                    <option value="Engagement">Engagement</option>
+                    <option value="Conversion">Conversion</option>
+                </select>
+
+                <label for="min_words">Minimum Words per Caption:</label>
+                <input type="number" id="min_words" name="min_words" min="5" value="10">
+
+                <label for="add_on_text">Add-On Text (Optional):</label>
+                <textarea id="add_on_text" name="add_on_text" placeholder="e.g., Sustainability Focus"></textarea>
+
+                <button type="submit" class="btn btn-primary">Generate Event Captions</button>
+            </form>
+
+            <section id="resultSection" class="results" style="display: none;">
+                <h2>Generated Captions</h2>
+                <table class="result-table">
+                    <thead>
+                        <tr>
+                            <th>Caption</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="captions"></tbody>
+                </table>
+            
+                <h2>Generated Headlines</h2>
+                <table class="result-table">
+                    <thead>
+                        <tr>
+                            <th>Headline</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="headlines"></tbody>
+                </table>
+            
+                <div class="ad-suggestions">
+                    <h2>Ad Suggestions</h2>
+                    <p><strong>Visual Idea:</strong> <span id="visual_idea"></span></p>
+                    <p><strong>CTA:</strong> <span id="cta"></span></p>
+                </div>
+            
+                <button id="regenerateBtn" class="btn btn-secondary">Regenerate</button>
+            </section>
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='event_script.js') }}"></script>
+</body>
+</html>

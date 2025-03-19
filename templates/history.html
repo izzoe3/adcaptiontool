@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>QIU Generated History</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <h1>QIU Generated History</h1>
+            <nav>
+                <a href="/">Dashboard</a>
+                <a href="/generator">Ad Generator</a>
+                <a href="/persona">Persona Generator</a>
+                <a href="/event_caption">Event Captions</a>
+                <a href="/campaigns">Meta Campaigns</a>
+            </nav>
+        </header>
+        
+        <main class="card">
+            <!-- Date Filter -->
+            <div class="filter-group">
+                <label for="dateFilter">Filter by Date:</label>
+                <input type="date" id="dateFilter" name="dateFilter">
+            </div>
+
+            <!-- Meta Campaigns -->
+            <section class="history-section">
+                <h2 class="section-toggle">Meta Campaigns <span class="toggle-icon">+</span></h2>
+                <div class="section-content" style="display: none;">
+                    {% for date, items in history|groupby('timestamp'|truncate(10, true, '')) %}
+                        {% if items|selectattr('platform', 'equalto', 'Meta')|selectattr('campaign_type', 'ne', 'Event')|list %}
+                            <div class="date-group">
+                                <h3 class="date-toggle">{{ date }} <span class="toggle-icon">+</span></h3>
+                                <div class="date-content" style="display: none;">
+                                    <table class="history-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Intake/Event</th>
+                                                <th>Tone</th>
+                                                <th>Target Audience</th>
+                                                <th>Ad Goal</th>
+                                                <th>Captions</th>
+                                                <th>Headlines</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for item in items if item.platform == 'Meta' and item.campaign_type != 'Event' %}
+                                                <tr class="history-row">
+                                                    <td>{{ item.intake }}</td>
+                                                    <td>{{ item.tone }}</td>
+                                                    <td>{{ item.target_audience }}</td>
+                                                    <td>{{ item.ad_goal or 'None' }}</td>
+                                                    <td>
+                                                        {% for caption in item.result.captions %}
+                                                            <div>
+                                                                <span {% if item.used.get(caption) %}class="used"{% endif %}>{{ caption }}</span>
+                                                                <input type="checkbox" class="used-toggle" data-caption="{{ caption }}" data-id="{{ item.id }}" {% if item.used.get(caption) %}checked{% endif %}>
+                                                            </div>
+                                                        {% endfor %}
+                                                    </td>
+                                                    <td>
+                                                        {% for headline in item.result.headlines %}
+                                                            <div>
+                                                                <span {% if item.used.get(headline) %}class="used"{% endif %}>{{ headline }}</span>
+                                                                <input type="checkbox" class="used-toggle" data-caption="{{ headline }}" data-id="{{ item.id }}" {% if item.used.get(headline) %}checked{% endif %}>
+                                                            </div>
+                                                        {% endfor %}
+                                                    </td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                    {% if not history|selectattr('platform', 'equalto', 'Meta')|selectattr('campaign_type', 'ne', 'Event')|list %}
+                        <p>No Meta campaigns available.</p>
+                    {% endif %}
+                </div>
+            </section>
+
+            <!-- Google Campaigns -->
+            <section class="history-section">
+                <h2 class="section-toggle">Google Campaigns <span class="toggle-icon">+</span></h2>
+                <div class="section-content" style="display: none;">
+                    {% for date, items in history|groupby('timestamp'|truncate(10, true, '')) %}
+                        {% if items|selectattr('platform', 'equalto', 'Google')|list %}
+                            <div class="date-group">
+                                <h3 class="date-toggle">{{ date }} <span class="toggle-icon">+</span></h3>
+                                <div class="date-content" style="display: none;">
+                                    <table class="history-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Intake/Event</th>
+                                                <th>Tone</th>
+                                                <th>Target Audience</th>
+                                                <th>Ad Goal</th>
+                                                <th>Captions</th>
+                                                <th>Headlines</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for item in items if item.platform == 'Google' %}
+                                                <tr class="history-row">
+                                                    <td>{{ item.intake }}</td>
+                                                    <td>{{ item.tone }}</td>
+                                                    <td>{{ item.target_audience }}</td>
+                                                    <td>{{ item.ad_goal or 'None' }}</td>
+                                                    <td>
+                                                        {% for headline in item.result.headlines %}
+                                                            <div>
+                                                                <span {% if item.used.get(headline) %}class="used"{% endif %}>{{ headline }}</span>
+                                                                <input type="checkbox" class="used-toggle" data-caption="{{ headline }}" data-id="{{ item.id }}" {% if item.used.get(headline) %}checked{% endif %}>
+                                                            </div>
+                                                        {% endfor %}
+                                                    </td>
+                                                    <td>
+                                                        {% for desc in item.result.descriptions %}
+                                                            <div>
+                                                                <span {% if item.used.get(desc) %}class="used"{% endif %}>{{ desc }}</span>
+                                                                <input type="checkbox" class="used-toggle" data-caption="{{ desc }}" data-id="{{ item.id }}" {% if item.used.get(desc) %}checked{% endif %}>
+                                                            </div>
+                                                        {% endfor %}
+                                                    </td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                    {% if not history|selectattr('platform', 'equalto', 'Google')|list %}
+                        <p>No Google campaigns available.</p>
+                    {% endif %}
+                </div>
+            </section>
+
+            <!-- Event Campaigns -->
+            <section class="history-section">
+                <h2 class="section-toggle">Event Campaigns <span class="toggle-icon">+</span></h2>
+                <div class="section-content" style="display: none;">
+                    {% for date, items in history|groupby('timestamp'|truncate(10, true, '')) %}
+                        {% if items|selectattr('campaign_type', 'equalto', 'Event')|list %}
+                            <div class="date-group">
+                                <h3 class="date-toggle">{{ date }} <span class="toggle-icon">+</span></h3>
+                                <div class="date-content" style="display: none;">
+                                    <table class="history-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Intake/Event</th>
+                                                <th>Tone</th>
+                                                <th>Target Audience</th>
+                                                <th>Ad Goal</th>
+                                                <th>Captions</th>
+                                                <th>Headlines</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for item in items if item.campaign_type == 'Event' %}
+                                                <tr class="history-row">
+                                                    <td>{{ item.intake }}</td>
+                                                    <td>{{ item.tone }}</td>
+                                                    <td>{{ item.target_audience }}</td>
+                                                    <td>{{ item.ad_goal or 'None' }}</td>
+                                                    <td>
+                                                        {% for caption in item.result.captions %}
+                                                            <div>
+                                                                <span {% if item.used.get(caption) %}class="used"{% endif %}>{{ caption }}</span>
+                                                                <input type="checkbox" class="used-toggle" data-caption="{{ caption }}" data-id="{{ item.id }}" {% if item.used.get(caption) %}checked{% endif %}>
+                                                            </div>
+                                                        {% endfor %}
+                                                    </td>
+                                                    <td>
+                                                        {% for headline in item.result.headlines %}
+                                                            <div>
+                                                                <span {% if item.used.get(headline) %}class="used"{% endif %}>{{ headline }}</span>
+                                                                <input type="checkbox" class="used-toggle" data-caption="{{ headline }}" data-id="{{ item.id }}" {% if item.used.get(headline) %}checked{% endif %}>
+                                                            </div>
+                                                        {% endfor %}
+                                                    </td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                    {% if not history|selectattr('campaign_type', 'equalto', 'Event')|list %}
+                        <p>No event campaigns available.</p>
+                    {% endif %}
+                </div>
+            </section>
+
+            <!-- Add after Event Campaigns section -->
+            <section class="history-section">
+                <h2 class="section-toggle">Persona Generator <span class="toggle-icon">+</span></h2>
+                <div class="section-content" style="display: none;">
+                    {% for date, items in history|groupby('timestamp'|truncate(10, true, '')) %}
+                        {% if items|selectattr('platform', 'equalto', 'Persona')|list %}
+                            <div class="date-group">
+                                <h3 class="date-toggle">{{ date }} <span class="toggle-icon">+</span></h3>
+                                <div class="date-content" style="display: none;">
+                                    <table class="history-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Product</th>
+                                                <th>Tone</th>
+                                                <th>Target Demographic</th>
+                                                <th>Persona Fields</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for item in items if item.platform == 'Persona' %}
+                                                <tr class="history-row">
+                                                    <td>{{ item.intake }}</td>
+                                                    <td>{{ item.tone }}</td>
+                                                    <td>{{ item.target_audience }}</td>
+                                                    <td>
+                                                        {% for field in item.result.persona %}
+                                                            <div>
+                                                                <span {% if item.used.get(field) %}class="used"{% endif %}>{{ field }}</span>
+                                                                <input type="checkbox" class="used-toggle" data-caption="{{ field }}" data-id="{{ item.id }}" {% if item.used.get(field) %}checked{% endif %}>
+                                                            </div>
+                                                        {% endfor %}
+                                                    </td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                    {% if not history|selectattr('platform', 'equalto', 'Persona')|list %}
+                        <p>No personas generated yet.</p>
+                    {% endif %}
+                </div>
+            </section>
+
+
+            <div class="button-group">
+                <button id="copyHistory" class="btn btn-secondary">Copy All</button>
+                <button id="clearHistory" class="btn btn-danger">Clear</button>
+                <button id="exportCSV" class="btn btn-primary">Export CSV</button>
+            </div>
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

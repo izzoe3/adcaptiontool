@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>QIU Persona Generator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <h1>QIU Persona Generator</h1>
+            <nav>
+                <a href="/">Dashboard</a>
+                <a href="/generator">Ad Generator</a>
+                <a href="/event_caption">Event Captions</a>
+                <a href="/campaigns">Meta Campaigns</a>
+                <a href="/history">History</a>
+            </nav>
+        </header>
+        
+        <main class="card">
+            <form id="personaForm" class="generator-form">
+                <label for="industry">Industry:</label>
+                <input type="text" id="industry" name="industry" placeholder="e.g., University" required>
+
+                <label for="product">Product/Service:</label>
+                <input type="text" id="product" name="product" placeholder="e.g., Foundation in Science" required>
+
+                <label for="demographic">Target Demographic:</label>
+                <input type="text" id="demographic" name="demographic" placeholder="e.g., Students" required>
+
+                <label for="tone">Tone:</label>
+                <select id="tone" name="tone" required>
+                    {% for tone in tones %}
+                        <option value="{{ tone }}">{{ tone }}</option>
+                    {% endfor %}
+                </select>
+
+                <button type="submit" class="btn btn-primary">Generate Persona</button>
+            </form>
+
+            <section id="resultSection" class="results" style="display: none;">
+                <h2>Generated Persona</h2>
+                <table class="result-table">
+                    <thead>
+                        <tr>
+                            <th>Field</th>
+                            <th>Details</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="persona"></tbody>
+                </table>
+                <button id="regenerateBtn" class="btn btn-secondary">Regenerate</button>
+            </section>
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='persona_script.js') }}"></script>
+</body>
+</html>

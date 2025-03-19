@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>QIU Ad Caption Generator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <h1>QIU Ad Caption Generator</h1>
+            <nav>
+                <a href="/">Dashboard</a>
+                <a href="/persona">Persona Generator</a>
+                <a href="/event_caption">Event Captions</a>
+                <a href="/campaigns">Meta Campaigns</a>
+                <a href="/history">History</a>
+            </nav>
+        </header>
+        
+        <main class="card">
+            <form id="adForm" class="generator-form">
+                <label for="platform">Platform:</label>
+                <select id="platform" name="platform" required>
+                    {% for platform in platforms %}
+                        <option value="{{ platform }}">{{ platform }}</option>
+                    {% endfor %}
+                </select>
+
+                <label for="campaign_type">Campaign Type:</label>
+                <select id="campaign_type" name="campaign_type" required>
+                    <option value="General">General</option>
+                    <option value="Foundation">Foundation</option>
+                    <option value="MBBS">MBBS</option>
+                    <option value="Pharmacy">Pharmacy</option>
+                </select>
+
+                <div id="foundation_options" style="display: none;">
+                    <label>Foundation Programs (select one or more):</label>
+                    {% for program in foundation_programs %}
+                        <div>
+                            <input type="checkbox" name="programs" value="{{ program }}" id="{{ program | replace(' ', '_') }}">
+                            <label for="{{ program | replace(' ', '_') }}">{{ program }}</label>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <label for="intake">Intake:</label>
+                <select id="intake" name="intake" required>
+                    {% for intake in intakes %}
+                        <option value="{{ intake }}">{{ intake }}</option>
+                    {% endfor %}
+                </select>
+
+                <label for="tone">Tone:</label>
+                <select id="tone" name="tone" required>
+                    <option value="Professional">Professional</option>
+                    <option value="Casual">Casual</option>
+                    <option value="Exciting">Exciting</option>
+                    <option value="Inspirational">Inspirational</option>
+                    <option value="Urgent">Urgent</option>
+                    <option value="Friendly">Friendly</option>
+                </select>
+
+                <label for="target_audience">Target Audience:</label>
+                <select id="target_audience" name="target_audience" required>
+                    <option value="Students">Students</option>
+                    <option value="Parents">Parents</option>
+                    <option value="Working Adults">Working Adults</option>
+                    <option value="General Public">General Public</option>
+                </select>
+
+                <label for="ad_goal">Ad Goal (Optional):</label>
+                <select id="ad_goal" name="ad_goal">
+                    <option value="">None</option>
+                    <option value="Awareness">Awareness</option>
+                    <option value="Engagement">Engagement</option>
+                    <option value="Conversion">Conversion</option>
+                </select>
+
+                <div id="meta_fields">
+                    <label for="min_words">Minimum Words per Caption (Meta only):</label>
+                    <input type="number" id="min_words" name="min_words" min="5" value="10">
+
+                    <label for="add_on_text">Add-On Text (Optional, Meta only):</label>
+                    <textarea id="add_on_text" name="add_on_text" placeholder="e.g., Sustainability Focus"></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Generate Captions</button>
+            </form>
+
+            <section id="resultSection" class="results" style="display: none;">
+                <h2>Generated Captions</h2>
+                <table class="result-table">
+                    <thead>
+                        <tr>
+                            <th>Caption</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="captions"></tbody>
+                </table>
+
+                <h2>Generated Headlines</h2>
+                <table class="result-table">
+                    <thead>
+                        <tr>
+                            <th>Headline</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="headlines"></tbody>
+                </table>
+
+                <h2>Generated Descriptions</h2>
+                <table class="result-table">
+                    <thead>
+                        <tr>
+                            <th>Description</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="descriptions"></tbody>
+                </table>
+
+                <button id="regenerateBtn" class="btn btn-secondary">Regenerate</button>
+            </section>
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
